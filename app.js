@@ -19,6 +19,8 @@
   const panel=document.querySelector('.vm-panel');
   const video=panel.querySelector('video');
   const closeBtn=panel.querySelector('.vm-close');
+  const readyBtn=document.querySelector('.cry-ready');
+  const cryCloseButtons=document.querySelectorAll('[data-cry-close]');
   const stopYouTube=()=>document.querySelectorAll('iframe').forEach(f=>f.contentWindow?.postMessage(JSON.stringify({event:'command',func:'pauseVideo',args:[]}),'https://www.youtube-nocookie.com'));
   let busy=false,anim;
   const dur=()=>motion.matches?0:520;
@@ -59,10 +61,14 @@
     card.focus({preventScroll:true});
     busy=false;
   }
-  card.addEventListener('click',openVideo);
+  function openPrompt(){if(busy)return;document.body.classList.add('cry-open');readyBtn.focus({preventScroll:true});}
+  function closePrompt(){if(!document.body.classList.contains('cry-open'))return;document.body.classList.remove('cry-open');card.focus({preventScroll:true});}
+  card.addEventListener('click',openPrompt);
+  readyBtn.addEventListener('click',()=>{document.body.classList.remove('cry-open');openVideo();});
+  cryCloseButtons.forEach(button=>button.addEventListener('click',closePrompt));
   closeBtn.addEventListener('click',closeVideo);
   document.querySelector('[data-vm-close]').addEventListener('click',closeVideo);
-  document.addEventListener('keydown',e=>{if(e.key==='Escape')closeVideo();});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(document.body.classList.contains('cry-open'))closePrompt();else closeVideo();}});
   video.addEventListener('play',stopYouTube);
   document.querySelectorAll('.video-facade').forEach(button => button.addEventListener('click', () => {
     video.pause();
