@@ -59,6 +59,6 @@
   let surprised=false;
   const surprise=new IntersectionObserver(entries=>{
     if(entries.some(entry=>entry.isIntersecting)&&!surprised&&!motion.matches){surprised=true;burst();surprise.disconnect();}
-  },{threshold:.25});
+  },{threshold:.12});
   surprise.observe(document.querySelector('.birthday'));
 })();
