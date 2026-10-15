@@ -24,20 +24,35 @@
     frame.referrerPolicy = 'strict-origin-when-cross-origin';
     button.replaceWith(frame);
   }));
+  function burst() {
+    if (motion.matches) return;
+    document.querySelector('.confetti-burst')?.remove();
+    const canvas=document.createElement('canvas'); canvas.className='confetti-burst'; canvas.setAttribute('aria-hidden','true');
+    Object.assign(canvas.style,{position:'fixed',inset:'0',width:'100%',height:'100%',pointerEvents:'none',zIndex:'1000'});
+    const width=innerWidth,height=innerHeight,ratio=Math.min(devicePixelRatio||1,2);
+    canvas.width=width*ratio; canvas.height=height*ratio; document.body.append(canvas);
+    const ctx=canvas.getContext('2d');ctx.scale(ratio,ratio);
+    const colors=['#f5c46e','#f18c81','#8acac3','#c3adf7','#fff0d4'];
+    const bits=Array.from({length:140},(_,i)=>({x:width/2,y:height*.6,vx:(Math.random()-.5)*19,vy:-8-Math.random()*15,size:4+Math.random()*7,angle:Math.random()*6.28,spin:(Math.random()-.5)*.22,color:colors[i%colors.length]}));
+    let last=performance.now(),elapsed=0;
+    function draw(now){
+      const step=Math.min((now-last)/16.67,2);last=now;elapsed+=step;
+      if(motion.matches||elapsed>240){canvas.remove();return;}
+      ctx.clearRect(0,0,width,height);ctx.globalAlpha=Math.min(1,(240-elapsed)/50);
+      bits.forEach(b=>{b.vx*=Math.pow(.988,step);b.vy+=.23*step;b.x+=b.vx*step;b.y+=b.vy*step;b.angle+=b.spin*step;ctx.save();ctx.translate(b.x,b.y);ctx.rotate(b.angle);ctx.fillStyle=b.color;ctx.fillRect(-b.size/2,-b.size/2,b.size,b.size*.55);ctx.restore();});
+      requestAnimationFrame(draw);
+    }
+    requestAnimationFrame(draw);
+  }
   const celebrate = document.querySelector('.celebrate');
   celebrate.addEventListener('click', () => {
-    const active = celebrate.getAttribute('aria-pressed') !== 'true';
-    celebrate.setAttribute('aria-pressed', String(active));
-    celebrate.textContent = active ? '¡Va por ti, José! ♥' : 'Un poco de confeti para ti ↗';
-    document.querySelector('.confetti')?.remove();
-    if (active) {
-      const confetti = document.createElement('div'); confetti.className = 'confetti'; confetti.setAttribute('aria-hidden', 'true');
-      for (let i = 0; i < 24; i++) {
-        const bit = document.createElement('i');
-        bit.style.left = (i*41%100)+'%'; bit.style.animationDelay = (i%6)*.09+'s';
-        bit.style.background = ['#f5c46e','#f18c81','#8acac3','#c3adf7'][i%4]; confetti.append(bit);
-      }
-      document.querySelector('.birthday').append(confetti);
-    }
+    celebrate.setAttribute('aria-pressed','true');
+    celebrate.textContent='¡Va por ti, José! ♥';
+    burst();
   });
+  let surprised=false;
+  const surprise=new IntersectionObserver(entries=>{
+    if(entries.some(entry=>entry.isIntersecting)&&!surprised&&!motion.matches){surprised=true;burst();surprise.disconnect();}
+  },{threshold:.25});
+  surprise.observe(document.querySelector('.birthday'));
 })();
