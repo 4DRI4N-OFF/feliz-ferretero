@@ -15,9 +15,15 @@
   }
   prepare();
   motion.addEventListener('change', prepare);
+  const audio=document.getElementById('tribute-audio');
+  const audioButton=document.querySelector('.audio-toggle');
+  const syncAudio=()=>{const playing=!audio.paused&&!audio.ended;audioButton.setAttribute('aria-pressed',String(playing));audioButton.setAttribute('aria-label',playing?'Pausar homenaje':'Escuchar homenaje');audioButton.querySelector('.audio-label').textContent=playing?'Pausar homenaje':'Escuchar homenaje';audioButton.querySelector('.audio-icon').textContent=playing?'Ⅱ':'▶';};
+  audioButton.addEventListener('click',async()=>{if(!audio.paused){audio.pause();return;}try{document.querySelectorAll('iframe').forEach(frame=>frame.contentWindow?.postMessage(JSON.stringify({event:'command',func:'pauseVideo',args:[]}),'https://www.youtube-nocookie.com'));await audio.play();}catch(e){audioButton.querySelector('.audio-label').textContent='No se pudo reproducir. Reintentar';}});
+  ['play','pause','ended'].forEach(event=>audio.addEventListener(event,syncAudio));
   document.querySelectorAll('.video-facade').forEach(button => button.addEventListener('click', () => {
+    audio.pause();
     const frame = document.createElement('iframe');
-    frame.src = `https://www.youtube-nocookie.com/embed/${button.dataset.video}?autoplay=1&playsinline=1&rel=0&start=${button.dataset.start||0}`;
+    frame.src = `https://www.youtube-nocookie.com/embed/${button.dataset.video}?enablejsapi=1&autoplay=1&playsinline=1&rel=0&start=${button.dataset.start||0}`;
     frame.title = button.getAttribute('aria-label').replace('Reproducir ', '');
     frame.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
     frame.allowFullscreen = true;
