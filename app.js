@@ -61,10 +61,10 @@
     card.focus({preventScroll:true});
     busy=false;
   }
-  function openPrompt(){if(busy)return;if(!readyBtn){openVideo();return;}document.body.classList.add('cry-open');readyBtn.focus({preventScroll:true});}
   function closePrompt(){if(!document.body.classList.contains('cry-open'))return;document.body.classList.remove('cry-open');card.focus({preventScroll:true});}
-  card.addEventListener('click',openPrompt);
-  readyBtn?.addEventListener('click',()=>{document.body.classList.remove('cry-open');openVideo();});
+  card.addEventListener('click',openVideo);
+  readyBtn?.addEventListener('click',closePrompt);
+  if(readyBtn&&document.body.classList.contains('cry-open'))readyBtn.focus({preventScroll:true});
   cryCloseButtons.forEach(button=>button.addEventListener('click',closePrompt));
   closeBtn.addEventListener('click',closeVideo);
   document.querySelector('[data-vm-close]').addEventListener('click',closeVideo);
