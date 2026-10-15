@@ -15,13 +15,57 @@
   }
   prepare();
   motion.addEventListener('change', prepare);
-  const audio=document.getElementById('tribute-audio');
-  const audioButton=document.querySelector('.audio-toggle');
-  const syncAudio=()=>{const playing=!audio.paused&&!audio.ended;audioButton.setAttribute('aria-pressed',String(playing));audioButton.setAttribute('aria-label',playing?'Pausar homenaje':'Escuchar homenaje');audioButton.querySelector('.audio-label').textContent=playing?'Pausar homenaje':'Escuchar homenaje';audioButton.querySelector('.audio-icon').textContent=playing?'Ⅱ':'▶';};
-  audioButton.addEventListener('click',async()=>{if(!audio.paused){audio.pause();return;}try{document.querySelectorAll('iframe').forEach(frame=>frame.contentWindow?.postMessage(JSON.stringify({event:'command',func:'pauseVideo',args:[]}),'https://www.youtube-nocookie.com'));await audio.play();}catch(e){audioButton.querySelector('.audio-label').textContent='No se pudo reproducir. Reintentar';}});
-  ['play','pause','ended'].forEach(event=>audio.addEventListener(event,syncAudio));
+  const card=document.querySelector('.audio-toggle');
+  const panel=document.querySelector('.vm-panel');
+  const video=panel.querySelector('video');
+  const closeBtn=panel.querySelector('.vm-close');
+  const stopYouTube=()=>document.querySelectorAll('iframe').forEach(f=>f.contentWindow?.postMessage(JSON.stringify({event:'command',func:'pauseVideo',args:[]}),'https://www.youtube-nocookie.com'));
+  let busy=false,anim;
+  const dur=()=>motion.matches?0:520;
+  function morph(from,to,opts){
+    if(!opts.ms) return Promise.resolve();
+    const fx=from.left-to.left+(from.width-to.width)/2, fy=from.top-to.top+(from.height-to.height)/2;
+    const f=`translate(calc(-50% + ${fx}px), calc(-50% + ${fy}px)) scale(${from.width/to.width}, ${from.height/to.height})`;
+    const c='translate(-50%,-50%) scale(1,1)';
+    anim=panel.animate(opts.reverse?[{transform:c,borderRadius:'22px'},{transform:f,borderRadius:'24px'}]:[{transform:f,borderRadius:'24px'},{transform:c,borderRadius:'22px'}],{duration:opts.ms,easing:'cubic-bezier(.22,.8,.2,1)',fill:'both'});
+    return anim.finished.catch(()=>{});
+  }
+  async function openVideo(){
+    if(busy) return; busy=true;
+    stopYouTube();
+    const from=card.getBoundingClientRect();
+    panel.hidden=false; panel.classList.add('on');
+    document.body.classList.add('vm-open','vm-morphing');
+    const to=panel.getBoundingClientRect();
+    await morph(from,to,{ms:dur()});
+    anim?.cancel();
+    document.body.classList.remove('vm-morphing');
+    closeBtn.focus({preventScroll:true});
+    busy=false;
+  }
+  async function closeVideo(){
+    if(busy||!panel.classList.contains('on')) return; busy=true;
+    video.pause();
+    const to=card.getBoundingClientRect();
+    const from=panel.getBoundingClientRect();
+    document.body.classList.add('vm-morphing');
+    document.body.classList.remove('vm-open');
+    card.style.visibility='hidden';
+    await morph(to,from,{ms:dur(),reverse:true});
+    anim?.cancel();
+    panel.classList.remove('on'); panel.hidden=true;
+    card.style.visibility='';
+    document.body.classList.remove('vm-morphing');
+    card.focus({preventScroll:true});
+    busy=false;
+  }
+  card.addEventListener('click',openVideo);
+  closeBtn.addEventListener('click',closeVideo);
+  document.querySelector('[data-vm-close]').addEventListener('click',closeVideo);
+  document.addEventListener('keydown',e=>{if(e.key==='Escape')closeVideo();});
+  video.addEventListener('play',stopYouTube);
   document.querySelectorAll('.video-facade').forEach(button => button.addEventListener('click', () => {
-    audio.pause();
+    video.pause();
     const frame = document.createElement('iframe');
     frame.src = `https://www.youtube-nocookie.com/embed/${button.dataset.video}?enablejsapi=1&autoplay=1&playsinline=1&rel=0&start=${button.dataset.start||0}`;
     frame.title = button.getAttribute('aria-label').replace('Reproducir ', '');
